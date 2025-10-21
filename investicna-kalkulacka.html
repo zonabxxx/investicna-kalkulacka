@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulačka investičného bytu s infláciou</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Calibri', Arial, sans-serif;
+            background: #e8e8e8;
+            padding: 20px;
+        }
+        
+        .excel-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .excel-header {
+            background: #217346;
+            color: white;
+            padding: 15px 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            border: 1px solid #d0d0d0;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #f2f2f2;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .section-header {
+            background: #4472C4;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .label-cell {
+            background: #F2F2F2;
+            font-weight: 500;
+        }
+        
+        .input-cell input {
+            width: 100%;
+            border: none;
+            padding: 4px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .input-cell input:focus {
+            outline: 2px solid #217346;
+        }
+        
+        .formula-cell {
+            background: #FFF2CC;
+            font-weight: 600;
+            color: #000;
+        }
+        
+        .result-cell {
+            background: #C6E0B4;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        
+        .highlight-cell {
+            background: #FFE699;
+            font-weight: bold;
+        }
+        
+        .number {
+            text-align: right;
+        }
+        
+        .currency::after {
+            content: ' €';
+        }
+        
+        .percent::after {
+            content: ' %';
+        }
+        
+        .total-row {
+            border-top: 2px solid #333;
+            font-weight: bold;
+        }
+        
+        .projection-table {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+        
+        .projection-table table {
+            font-size: 12px;
+        }
+        
+        .projection-table th {
+            background: #4472C4;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        .projection-table td {
+            text-align: right;
+        }
+        
+        .positive-cf {
+            background: #C6E0B4 !important;
+        }
+        
+        .negative-cf {
+            background: #FFC7CE !important;
+        }
+        
+        .info-box {
+            padding: 20px;
+            background: #E7F3FF;
+            border-left: 4px solid #4472C4;
+            margin: 20px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="excel-container">
+        <div class="excel-header">
+            📊 INVESTIČNÝ BYT - ANALÝZA S INFLÁCIOU A DLHODOBÁ PROJEKCIA
+        </div>
+        
+        <table>
+            <!-- ZÁKLADNÉ ÚDAJE -->
+            <tr class="section-header">
+                <th colspan="2">A. ZÁKLADNÉ ÚDAJE O INVESTÍCII</th>
+            </tr>
+            <tr>
+                <td class="label-cell">Kúpna cena bytu</td>
+                <td class="input-cell number"><input type="number" id="kupnaCena" value="150000" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell">Vedľajšie náklady (notár, daň, provízie)</td>
+                <td class="input-cell number"><input type="number" id="vedlajsieNaklady" value="5000" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell">Rekonštrukcia/Zariadenie</td>
+                <td class="input-cell number"><input type="number" id="rekonstrukcia" value="10000" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr class="total-row">
+                <td class="label-cell">CELKOVÁ INVESTÍCIA</td>
+                <td class="formula-cell number" id="celkovaInvesticia">165 000 €</td>
+            </tr>
+            
+            <!-- FINANCOVANIE -->
+            <tr><td colspan="2" style="height: 10px; background: white;"></td></tr>
+            <tr class="section-header">
+                <th colspan="2">B. FINANCOVANIE</th>
+            </tr>
+            <tr>
+                <td class="label-cell">Vlastné zdroje</td>
+                <td class="input-cell number"><input type="number" id="vlastneZdroje" value="35000" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell">Hypotekárny úver</td>
+                <td class="formula-cell number" id="vysukaUveru">130 000 €</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Úroková sadzba p.a.</td>
+                <td class="input-cell number"><input type="number" id="urok" value="3.8" step="0.1" oninput="calculate()"><span class="percent"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell">Doba splácania (roky)</td>
+                <td class="input-cell number"><input type="number" id="dobaUveru" value="25" oninput="calculate()"></td>
+            </tr>
+            <tr class="highlight-cell">
+                <td class="label-cell">Mesačná splátka úveru (fixná)</td>
+                <td class="formula-cell number" id="mesacnaSplatka">692 €</td>
+            </tr>
+            
+            <!-- PRÍJMY -->
+            <tr><td colspan="2" style="height: 10px; background: white;"></td></tr>
+            <tr class="section-header">
+                <th colspan="2">C. PRÍJMY Z PRENÁJMU</th>
+            </tr>
+            <tr>
+                <td class="label-cell">Mesačné nájomné (začiatočné)</td>
+                <td class="input-cell number"><input type="number" id="najomne" value="900" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell">Obsadenosť (% mesiacov v roku)</td>
+                <td class="input-cell number"><input type="number" id="obsadenost" value="92" oninput="calculate()"><span class="percent"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="color: #C65911; font-weight: bold;">⚡ Ročná inflácia nájomného</td>
+                <td class="input-cell number"><input type="number" id="inflaciaNajomne" value="3.5" step="0.1" oninput="calculate()"><span class="percent"></span></td>
+            </tr>
+            <tr class="formula-cell">
+                <td class="label-cell">Ročné nájomné (1. rok)</td>
+                <td class="number" id="rocneNajomne">9 936 €</td>
+            </tr>
+            
+            <!-- NÁKLADY -->
+            <tr><td colspan="2" style="height: 10px; background: white;"></td></tr>
+            <tr class="section-header">
+                <th colspan="2">D. PREVÁDZKOVÉ NÁKLADY</th>
+            </tr>
+            <tr>
+                <td class="label-cell" style="padding-left: 20px;">Daň z nehnuteľnosti (ročne)</td>
+                <td class="input-cell number"><input type="number" id="dan" value="250" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="padding-left: 20px;">Poistenie nehnuteľnosti (ročne)</td>
+                <td class="input-cell number"><input type="number" id="poistenie" value="350" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="padding-left: 20px;">Správa nehnuteľnosti (mesačne)</td>
+                <td class="input-cell number"><input type="number" id="sprava" value="80" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="padding-left: 20px;">Fond opráv (mesačne)</td>
+                <td class="input-cell number"><input type="number" id="fondOprav" value="40" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="padding-left: 20px;">Rezerva na údržbu (mesačne)</td>
+                <td class="input-cell number"><input type="number" id="rezerva" value="60" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="padding-left: 20px;">Daň z príjmu (ročne)</td>
+                <td class="input-cell number"><input type="number" id="danPrijem" value="800" oninput="calculate()"><span class="currency"></span></td>
+            </tr>
+            <tr>
+                <td class="label-cell" style="color: #C65911; font-weight: bold;">⚡ Ročná inflácia nákladov</td>
+                <td class="input-cell number"><input type="number" id="inflaciaNakladov" value="2.5" step="0.1" oninput="calculate()"><span class="percent"></span></td>
+            </tr>
+            <tr class="total-row">
+                <td class="label-cell">CELKOVÉ ROČNÉ NÁKLADY (1. rok)</td>
+                <td class="formula-cell number" id="celkoveNaklady">3 610 €</td>
+            </tr>
+            
+            <!-- VÝSLEDKY -->
+            <tr><td colspan="2" style="height: 15px; background: white;"></td></tr>
+            <tr class="section-header">
+                <th colspan="2">E. CASH FLOW - PRVÝ ROK</th>
+            </tr>
+            <tr>
+                <td class="label-cell">Ročné príjmy z nájmu</td>
+                <td class="formula-cell number" id="prijmy">9 936 €</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Ročné splátky úveru</td>
+                <td class="formula-cell number" id="splatkyRocne">8 304 €</td>
+            </tr>
+            <tr>
+                <td class="label-cell">Prevádzkové náklady</td>
+                <td class="formula-cell number" id="nakladyRocne">3 610 €</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">ROČNÝ CASH FLOW (1. rok)</td>
+                <td class="number" id="rocnyCashFlow">-1 978 €</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">MESAČNÝ CASH FLOW (1. rok)</td>
+                <td class="number" id="mesacnyCashFlow">-165 €</td>
+            </tr>
+            
+            <!-- VÝNOSNOSŤ -->
+            <tr><td colspan="2" style="height: 15px; background: white;"></td></tr>
+            <tr class="section-header">
+                <th colspan="2">F. UKAZOVATELE VÝNOSNOSTI</th>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">HRUBÝ VÝNOS (1. rok)</td>
+                <td class="number" id="hrubyVynos">6.02 %</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">ČISTÝ VÝNOS (1. rok)</td>
+                <td class="number" id="cistyVynos">3.83 %</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">ROI - Return on Investment (1. rok)</td>
+                <td class="number" id="roi">-5.65 %</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">CAP RATE (kapitalizačná miera)</td>
+                <td class="number" id="capRate">3.83 %</td>
+            </tr>
+            
+            <!-- DLHODOBÉ VÝSLEDKY -->
+            <tr><td colspan="2" style="height: 10px; background: white;"></td></tr>
+            <tr class="result-cell">
+                <td class="label-cell">⭐ CELKOVÁ SUMA DOPLATKOV (do kladného CF)</td>
+                <td class="number" id="celkoveDoplatky" style="font-size: 16px;">0 €</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">⭐ SKUTOČNÁ INVESTÍCIA (s doplatkami)</td>
+                <td class="number" id="skutocnaInvesticia" style="font-size: 16px;">35 000 €</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">⭐ ROK KLADNÉHO CASH FLOW</td>
+                <td class="number" id="rokKladnehoCF" style="font-size: 16px;">3. rok</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">⭐ NÁVRATNOSŤ POČIATOČNEJ INVESTÍCIE</td>
+                <td class="number" id="navratnostPociatocnej" style="font-size: 16px;">18.5 rokov</td>
+            </tr>
+            <tr class="result-cell">
+                <td class="label-cell">⭐ NÁVRATNOSŤ CELKOVEJ INVESTÍCIE (vrátane doplatkov)</td>
+                <td class="number" id="dobaNavratnosti" style="font-size: 16px;">18.5 rokov</td>
+            </tr>
+        </table>
+        
+        <div class="info-box">
+            <strong>💡 Ako to funguje - peňažný tok:</strong><br><br>
+            
+            <strong style="color: #217346;">1️⃣ NÁJOMCA PLATÍ:</strong> Mesačné nájomné → ide vám<br>
+            <strong style="color: #C65911;">2️⃣ Z NÁJOMNÉHO PLATÍTE:</strong> Splátku úveru + všetky náklady (daň, poistenie, správa...)<br>
+            <strong style="color: #8B0000;">3️⃣ AK NÁJOMNÉ NESTAČÍ:</strong> Doplácate rozdiel zo svojho vrecka<br><br>
+            
+            <strong>📊 VAŠA SKUTOČNÁ INVESTÍCIA:</strong><br>
+            • Počiatočný vklad: <span id="displayVlastneZdroje" style="font-weight: bold;">35 000 €</span><br>
+            • Mesačné doplatky (celkom): <span id="displayDoplatky" style="color: #8B0000; font-weight: bold;">0 €</span><br>
+            • <strong style="font-size: 1.1em;">= CELKOM: <span id="displaySkutocnaInv">35 000 €</span></strong><br><br>
+            
+            <strong>🚀 EFEKT INFLÁCIE:</strong><br>
+            Nájomné rastie o <span id="displayInflaciaNajomne">3.5%</span> ročne, splátka zostáva fixná <span id="displaySplatka">692 €</span>/mes.<br>
+            → Každý rok doplácate menej, potom začnete zarábať!<br><br>
+            
+            <strong>✅ Náklady (daň, poistenie, správa...) platíte Z NÁJOMNÉHO, nie navyše!</strong>
+        </div>
+        
+        <!-- PROJEKCIA -->
+        <div class="projection-table">
+            <h3 style="padding: 20px; background: #4472C4; color: white; margin: 0;">
+                📈 DLHODOBÁ PROJEKCIA (25 rokov)
+            </h3>
+            <table id="projectionTable">
+                <thead>
+                    <tr>
+                        <th>Rok</th>
+                        <th>Nájomné<br>€/mes</th>
+                        <th>Príjmy<br>€/rok</th>
+                        <th>Náklady<br>€/rok</th>
+                        <th>Splátky<br>€/rok</th>
+                        <th>Cash Flow<br>€/rok</th>
+                        <th>CF/mes</th>
+                        <th>Kumulatívny<br>CF €</th>
+                    </tr>
+                </thead>
+                <tbody id="projectionBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="padding: 20px; background: #f9f9f9; border-top: 2px solid #ddd; margin-top: 20px;">
+            <p style="font-size: 12px; color: #666; line-height: 1.6;">
+                <strong>Vysvetlivky:</strong><br>
+                • <strong>Počiatočná investícia</strong>: Vaše vlastné zdroje na začiatku (napr. 5 000 € alebo 35 000 €)<br>
+                • <strong>Mesačný cash flow</strong>: Nájomné MÍNUS splátka MÍNUS náklady = čo vám zostane (alebo musíte doplatiť)<br>
+                • <strong>Celková suma doplatkov</strong>: Súčet všetkých mesačných doplatkov v záporných rokoch<br>
+                • <strong>Skutočná investícia</strong>: Počiatočný vklad + všetky doplatky = celkom čo ste dali zo svojho<br>
+                • <strong>Rok kladného CF</strong>: Kedy prestanete doplácať a nájomné už pokryje všetko + vám niečo zostane<br>
+                • <strong>Kumulatívny CF</strong>: Celkový zisk/strata od začiatku (nezahŕňa počiatočný vklad, len mesačné toky)<br><br>
+                <strong>💡 Príklad (1. rok):</strong> Nájomné 900 € - Splátka 692 € - Náklady 301 € = <strong>-93 € musíte doplatiť</strong><br>
+                Toto je váš skutočný mesačný výdaj, nie celkových 993 €!
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        function calculate() {
+            // Vstupné hodnoty
+            const kupnaCena = parseFloat(document.getElementById('kupnaCena').value) || 0;
+            const vedlajsieNaklady = parseFloat(document.getElementById('vedlajsieNaklady').value) || 0;
+            const rekonstrukcia = parseFloat(document.getElementById('rekonstrukcia').value) || 0;
+            const vlastneZdroje = parseFloat(document.getElementById('vlastneZdroje').value) || 0;
+            const urok = parseFloat(document.getElementById('urok').value) || 0;
+            const dobaUveru = parseFloat(document.getElementById('dobaUveru').value) || 0;
+            const najomne = parseFloat(document.getElementById('najomne').value) || 0;
+            const obsadenost = parseFloat(document.getElementById('obsadenost').value) || 0;
+            const dan = parseFloat(document.getElementById('dan').value) || 0;
+            const poistenie = parseFloat(document.getElementById('poistenie').value) || 0;
+            const sprava = parseFloat(document.getElementById('sprava').value) || 0;
+            const fondOprav = parseFloat(document.getElementById('fondOprav').value) || 0;
+            const rezerva = parseFloat(document.getElementById('rezerva').value) || 0;
+            const danPrijem = parseFloat(document.getElementById('danPrijem').value) || 0;
+            const inflaciaNajomne = parseFloat(document.getElementById('inflaciaNajomne').value) || 0;
+            const inflaciaNakladov = parseFloat(document.getElementById('inflaciaNakladov').value) || 0;
+            
+            // Celková investícia
+            const celkovaInvesticia = kupnaCena + vedlajsieNaklady + rekonstrukcia;
+            document.getElementById('celkovaInvesticia').textContent = celkovaInvesticia.toLocaleString('sk-SK') + ' €';
+            
+            // Výška úveru
+            const vysukaUveru = celkovaInvesticia - vlastneZdroje;
+            document.getElementById('vysukaUveru').textContent = vysukaUveru.toLocaleString('sk-SK') + ' €';
+            
+            // Mesačná splátka úveru
+            const mesiacneUroky = urok / 100 / 12;
+            const pocetSplatok = dobaUveru * 12;
+            let mesacnaSplatka = 0;
+            
+            if (vysukaUveru > 0 && mesiacneUroky > 0) {
+                mesacnaSplatka = vysukaUveru * (mesiacneUroky * Math.pow(1 + mesiacneUroky, pocetSplatok)) / 
+                                 (Math.pow(1 + mesiacneUroky, pocetSplatok) - 1);
+            }
+            document.getElementById('mesacnaSplatka').textContent = mesacnaSplatka.toFixed(0) + ' €';
+            document.getElementById('displaySplatka').textContent = mesacnaSplatka.toFixed(0) + ' €';
+            document.getElementById('displayInflaciaNajomne').textContent = inflaciaNajomne + '%';
+            document.getElementById('displayVlastneZdroje').textContent = vlastneZdroje.toLocaleString('sk-SK') + ' €';
+            
+            // Prvý rok
+            const rocneNajomne = najomne * 12 * (obsadenost / 100);
+            document.getElementById('rocneNajomne').textContent = rocneNajomne.toFixed(0) + ' €';
+            
+            const celkoveNaklady = dan + poistenie + (sprava * 12) + (fondOprav * 12) + (rezerva * 12) + danPrijem;
+            document.getElementById('celkoveNaklady').textContent = celkoveNaklady.toFixed(0) + ' €';
+            
+            const rocneSplatky = mesacnaSplatka * 12;
+            const rocnyCashFlow = rocneNajomne - rocneSplatky - celkoveNaklady;
+            const mesacnyCashFlow = rocnyCashFlow / 12;
+            
+            document.getElementById('prijmy').textContent = rocneNajomne.toFixed(0) + ' €';
+            document.getElementById('splatkyRocne').textContent = rocneSplatky.toFixed(0) + ' €';
+            document.getElementById('nakladyRocne').textContent = celkoveNaklady.toFixed(0) + ' €';
+            
+            const cashFlowElement = document.getElementById('rocnyCashFlow');
+            cashFlowElement.textContent = rocnyCashFlow.toFixed(0) + ' €';
+            cashFlowElement.style.color = rocnyCashFlow >= 0 ? '#006400' : '#8B0000';
+            
+            const mesacnyElement = document.getElementById('mesacnyCashFlow');
+            mesacnyElement.textContent = mesacnyCashFlow.toFixed(0) + ' €';
+            mesacnyElement.style.color = mesacnyCashFlow >= 0 ? '#006400' : '#8B0000';
+            
+            // Výnosnosť
+            const hrubyVynos = (najomne * 12 / kupnaCena) * 100;
+            const cistyVynos = ((rocneNajomne - celkoveNaklady) / celkovaInvesticia) * 100;
+            const roi = vlastneZdroje > 0 ? (rocnyCashFlow / vlastneZdroje) * 100 : 0;
+            const capRate = ((rocneNajomne - celkoveNaklady) / celkovaInvesticia) * 100;
+            
+            document.getElementById('hrubyVynos').textContent = hrubyVynos.toFixed(2) + ' %';
+            document.getElementById('cistyVynos').textContent = cistyVynos.toFixed(2) + ' %';
+            
+            const roiElement = document.getElementById('roi');
+            roiElement.textContent = roi.toFixed(2) + ' %';
+            roiElement.style.color = roi >= 0 ? '#006400' : '#8B0000';
+            
+            document.getElementById('capRate').textContent = capRate.toFixed(2) + ' %';
+            
+            // Projekcia na 25 rokov
+            const projectionBody = document.getElementById('projectionBody');
+            projectionBody.innerHTML = '';
+            
+            let aktualneNajomne = najomne;
+            let aktualneNaklady = celkoveNaklady;
+            let kumulativnyCF = 0;
+            let rokKladnehoCF = 0;
+            let navratnostPociatocnej = 0;
+            let navratnostCelkovej = 0;
+            let celkoveDoplatky = 0;
+            let maximalnyZapornyKumulativnyCF = 0;
+            
+            for (let rok = 1; rok <= 25; rok++) {
+                const rocnePrijmy = aktualneNajomne * 12 * (obsadenost / 100);
+                const rocnyCF = rocnePrijmy - rocneSplatky - aktualneNaklady;
+                const mesacnyCF = rocnyCF / 12;
+                kumulativnyCF += rocnyCF;
+                
+                // Sledovanie najväčšej kumulatívnej straty
+                if (kumulativnyCF < maximalnyZapornyKumulativnyCF) {
+                    maximalnyZapornyKumulativnyCF = kumulativnyCF;
+                }
+                
+                // Prvý rok s kladným CF
+                if (rokKladnehoCF === 0 && rocnyCF > 0) {
+                    rokKladnehoCF = rok;
+                    celkoveDoplatky = Math.abs(maximalnyZapornyKumulativnyCF);
+                }
+                
+                // Návratnosť počiatočnej investície (len vlastné zdroje)
+                if (navratnostPociatocnej === 0 && kumulativnyCF >= 0) {
+                    navratnostPociatocnej = rok;
+                }
+                
+                // Návratnosť celkovej investície (vlastné zdroje + všetky doplatky)
+                const celkovaInvesticiaSDoplatkami = vlastneZdroje + Math.abs(maximalnyZapornyKumulativnyCF);
+                if (navratnostCelkovej === 0 && kumulativnyCF >= celkovaInvesticiaSDoplatkami - vlastneZdroje) {
+                    navratnostCelkovej = rok;
+                }
+                
+                const row = projectionBody.insertRow();
+                const cfClass = rocnyCF >= 0 ? 'positive-cf' : 'negative-cf';
+                
+                row.innerHTML = `
+                    <td style="font-weight: bold;">${rok}</td>
+                    <td>${aktualneNajomne.toFixed(0)} €</td>
+                    <td>${rocnePrijmy.toFixed(0)} €</td>
+                    <td>${aktualneNaklady.toFixed(0)} €</td>
+                    <td>${rocneSplatky.toFixed(0)} €</td>
+                    <td class="${cfClass}" style="font-weight: bold;">${rocnyCF.toFixed(0)} €</td>
+                    <td class="${cfClass}">${mesacnyCF.toFixed(0)} €</td>
+                    <td style="font-weight: bold;">${kumulativnyCF.toFixed(0)} €</td>
+                `;
+                
+                // Inflácia pre ďalší rok
+                aktualneNajomne = aktualneNajomne * (1 + inflaciaNajomne / 100);
+                aktualneNaklady = aktualneNaklady * (1 + inflaciaNakladov / 100);
+            }
+            
+            // Skutočná celková investícia
+            const skutocnaInvesticia = vlastneZdroje + celkoveDoplatky;
+            
+            // Zobrazenie výsledkov
+            document.getElementById('celkoveDoplatky').textContent = celkoveDoplatky.toFixed(0) + ' €';
+            document.getElementById('celkoveDoplatky').style.color = celkoveDoplatky > 0 ? '#8B0000' : '#006400';
+            
+            document.getElementById('skutocnaInvesticia').textContent = skutocnaInvesticia.toFixed(0) + ' €';
+            
+            // Aktualizácia info boxu
+            document.getElementById('displayDoplatky').textContent = celkoveDoplatky.toFixed(0) + ' €';
+            document.getElementById('displaySkutocnaInv').textContent = skutocnaInvesticia.toLocaleString('sk-SK') + ' €';
+            
+            const rokCFElement = document.getElementById('rokKladnehoCF');
+            if (rokKladnehoCF > 0) {
+                rokCFElement.textContent = rokKladnehoCF + '. rok';
+                rokCFElement.style.color = '#006400';
+            } else {
+                rokCFElement.textContent = 'Nikdy (25+ rokov)';
+                rokCFElement.style.color = '#8B0000';
+            }
+            
+            const navratnostPocElement = document.getElementById('navratnostPociatocnej');
+            if (navratnostPociatocnej > 0) {
+                navratnostPocElement.textContent = navratnostPociatocnej + ' rokov';
+                navratnostPocElement.style.color = '#006400';
+            } else {
+                navratnostPocElement.textContent = '25+ rokov';
+                navratnostPocElement.style.color = '#FF6600';
+            }
+            
+            const dobaElement = document.getElementById('dobaNavratnosti');
+            if (navratnostCelkovej > 0) {
+                dobaElement.textContent = navratnostCelkovej + ' rokov';
+                dobaElement.style.color = '#006400';
+            } else {
+                dobaElement.textContent = '25+ rokov';
+                dobaElement.style.color = '#FF6600';
+            }
+        }
+        
+        // Prvotný výpočet
+        calculate();
+    </script>
+</body>
+</html>
+
